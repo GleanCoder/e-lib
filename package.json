@@ -1,0 +1,27 @@
+{
+  "name": "elib",
+  "version": "1.0.0",
+  "description": "elibrary apis",
+  "keywords": [
+    "nodejs",
+    "elib"
+  ],
+  "license": "ISC",
+  "author": "Aditya Kiran",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.3.2",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1"
+  }
+}
