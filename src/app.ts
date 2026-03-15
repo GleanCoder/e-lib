@@ -1,15 +1,15 @@
 import express from "express";
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
-import createHttpError from "http-errors";
+import userRouter from "./users/users.route.js";
 
 const app = express();
+app.use(express.json());
 
 app.get("/", (req, res) => {
-  const err = createHttpError(400, "Something Went Wrong!");
-  throw err;
   res.send("Welcome to E-lib");
 });
 
+app.use("/api/users", userRouter);
 // Global error handler
 app.use(globalErrorHandler);
 
