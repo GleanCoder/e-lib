@@ -3,7 +3,7 @@ import createHttpError from "http-errors";
 import UserModel from "./users.model.js";
 import bcrypt from "bcrypt";
 import type { User } from "./userType.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 import { config } from "../config/config.js";
 
 const registerUsers = async (
@@ -13,7 +13,7 @@ const registerUsers = async (
 ) => {
   //Receive Request
   const { name, email, password } = req.body;
-  
+
   // Validate Input
   // here we are doing simple validation, but we can use tools like express validator
   if (!email || !name || !password) {
@@ -49,19 +49,59 @@ const registerUsers = async (
   }
 
   // Generate JWT Token
-// jwt.sign(payload, secret, options)
-// jwt.verify(token, secret)
-// The payload must be an object
+  // jwt.sign(payload, secret, options)
+  // jwt.verify(token, secret)
+  // The payload must be an object
 
   try {
-    const jwtToken=jwt.sign({sub:newUser._id},config.jwtSecret,{expiresIn:"7d",algorithm:"HS256"})
-     res.status(201).json({
-      message:"Account created Successfully!",
-      accessToken:jwtToken
-    })
+    const jwtToken = jwt.sign({ sub: newUser._id }, config.jwtSecret, {
+      expiresIn: "7d",
+      algorithm: "HS256",
+    });
+    res.status(201).json({
+      message: "Account created Successfully!",
+      accessToken: jwtToken,
+    });
   } catch (error) {
-   return  next(createHttpError(500,"Error while authenticate with JWT"))
+    return next(createHttpError(500, "Error while authenticate with JWT"));
   }
 };
 
-export { registerUsers };
+const loginUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return next(createHttpError(400, "Email or Password Cann't be empty."));
+  }
+
+  let user;
+  try {
+    user = await UserModel.findOne({ email });
+    if (!user) {
+      const error = createHttpError(400, "User not found!");
+      return next(error);
+    }
+  } catch (error) {
+    return next(createHttpError(500, "Error while getting User."));
+  }
+
+  const hashPassword = await bcrypt.compare(password, user.password);
+  if (!hashPassword) {
+    return next(createHttpError(400, "Invalid credentials!"));
+  }
+
+  try {
+    const jwtToken = jwt.sign({ sub: user._id }, config.jwtSecret, {
+      expiresIn: "7d",
+      algorithm: "HS256",
+    });
+    res
+      .status(200)
+      .json({ Message: "User LoggedIn Successfully!", accessToken: jwtToken });
+  } catch (error) {
+    return next(
+      createHttpError(500, "Error while dealing with JWT in Login. "),
+    );
+  }
+};
+
+export { registerUsers, loginUsers };
