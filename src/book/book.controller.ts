@@ -3,11 +3,15 @@ import cloudinary from "../config/cloudinary.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import createHttpError from "http-errors";
+import fs from "node:fs";
+import { BookModel } from "./book.model.js";
+import type { AuthRequest } from "../middlewares/authMiddleware.js";
+import mongoose from "mongoose";
 
 const createBook = async (req: Request, res: Response, next: NextFunction) => {
-  // const {}=req.body
-
+  const { title, genre } = req.body;
   const files = req.files;
+  const { userId } = req as AuthRequest;
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   try {
@@ -22,7 +26,7 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
     );
     const coverImageMemetype = files.coverImage[0]?.mimetype.split("/").at(-1);
 
-    const imageUploadResponse = cloudinary.uploader.upload(localPath, {
+    const imageUploadResponse = await cloudinary.uploader.upload(localPath, {
       filename_override: fileName,
       folder: "cover-images",
       format: coverImageMemetype,
@@ -39,7 +43,7 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
       bookFileName,
     );
 
-    const pdfUploadResponse = cloudinary.uploader.upload(bookLocalPath, {
+    const pdfUploadResponse = await cloudinary.uploader.upload(bookLocalPath, {
       resource_type: "raw",
       filename_override: bookFileName,
       folder: "book-pdfs",
@@ -48,6 +52,25 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
 
     if (!pdfUploadResponse) {
       return "Failed to upload PDF into cloudinary";
+    }
+
+    try {
+      const newBook = await BookModel.create({
+        author: new mongoose.Types.ObjectId(userId),
+        title,
+        genre,
+        coverImage: imageUploadResponse.secure_url,
+        file: pdfUploadResponse.secure_url,
+      });
+
+      await fs.promises.unlink(localPath);
+      await fs.promises.unlink(bookLocalPath);
+
+      res.status(201).json({
+        bookId: newBook._id,
+      });
+    } catch (error) {
+      return next(createHttpError(500, "Error while unlinking the local path"));
     }
   } catch (error) {
     console.log(error);
